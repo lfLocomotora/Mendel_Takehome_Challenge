@@ -8,7 +8,7 @@ API para guardar movimientos editables, buscar sus IDs por tipo y sumar una tran
 
 | Tema | Decisión |
 | --- | --- |
-| Plataforma | Spring Boot, Java 11 o superior o Kotlin, sin SQL. |
+| Plataforma | Spring Boot 4.1.2 y Java 27, sin SQL. Versiones de herramientas en el README. |
 | Entrega | Aplicación dockerizada, tests de integración y repositorio GitHub o Bitbucket. |
 | Extensión | Paginación opcional en la búsqueda por tipo. |
 | Fuera de alcance | Versioning, autenticación, rate limiting, interfaz visual, borrado e historial de cambios. |
@@ -295,6 +295,8 @@ No importa quién obtiene primero el lock: el lector observa el estado anterior 
 | `limit` y `cursor` | Continuación. |
 | Solo `cursor` | Continuación con tamaño 100. |
 
+Se rechazan parámetros desconocidos o repetidos para evitar interpretar silenciosamente peticiones ambiguas. El parser tampoco convierte strings numéricos a números. La normalización usa `strip()` y `Locale.ROOT`, independiente del idioma de la máquina.
+
 Ejemplo:
 
 ```http
@@ -314,7 +316,7 @@ Cuerpo: `[11,12]`. La siguiente página puede ser `[25,40]`.
 | Nuevo ID inferior al cursor | No aparecerá en las páginas siguientes. |
 | Última página o lista vacía | No devolver enlace `next`. |
 
-Bajo el lock de lectura se copia solo la página y se comprueba si existe otro ID. Después se libera el lock y se construye la respuesta. La clase del conjunto ordenado y la codificación del cursor se definen al implementar.
+Bajo el lock de lectura se copia solo la página y se comprueba si existe otro ID. Después se libera el lock y se construye la respuesta. Usamos `TreeSet` para los IDs por tipo. El cursor codifica el último ID (`long`) y el tipo normalizado en UTF-8 mediante Base64 URL-safe; no cifra ni autentica datos.
 
 El cursor permite continuar sin descartar posiciones como con offset, pero no facilita saltar a una página arbitraria. Ordenar los IDs al escribir permite recorrer páginas sin ordenar todo en cada consulta, a cambio de mantener ese orden.
 

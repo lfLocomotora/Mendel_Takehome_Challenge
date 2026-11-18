@@ -1,6 +1,6 @@
 # Pruebas y controles de calidad
 
-Plan para verificar el [diseño acordado](design-desicions.md) y el [contrato](assigment.md). No hay código ni herramientas configuradas todavía: este documento define qué implementaremos y cómo comprobaremos sus garantías.
+Catálogo de casos para verificar el [diseño acordado](design-desicions.md) y el [contrato](assigment.md). La suite implementada está en `src/test/java`; el [README](../README.md) contiene los comandos de ejecución.
 
 La propuesta de herramientas asume Java y Maven. Usar las últimas versiones estables compatibles entre sí, verificadas en fuentes oficiales al configurar o actualizar el proyecto. Fijar las versiones resueltas para reproducir el build; no usar versiones dinámicas, snapshots ni prereleases. Si hay un conflicto de compatibilidad o una versión gestionada por Spring Boot difiere de la última estable, explicarlo antes de elegir una excepción.
 
@@ -29,7 +29,7 @@ Seguimos TDD: cada comportamiento nuevo comienza con un test. Este plan es el ca
 
 Primero acordamos el resultado esperado según el contrato. No se modifica un test correcto para acomodar una implementación incorrecta; si cambia una regla, se actualizan explícitamente diseño y tests.
 
-Empezaremos por guardar y consultar una transacción, luego reemplazos, relaciones y sumas, validaciones, paginación y concurrencia. Cada comportamiento HTTP tendrá cobertura de integración; sus reglas complejas se desarrollarán con tests más pequeños. El arranque del proyecto y su configuración necesitan una verificación inicial antes del primer ciclo funcional.
+Los ciclos funcionales cubrieron almacenamiento, reemplazos, relaciones y sumas, validaciones, paginación y HTTP. La suite acumulada agrega regresiones de concurrencia y controles de arquitectura. Los commits conservan incrementos terminados en verde.
 
 Los tests verifican comportamiento, no una copia del algoritmo. El código se validará con la suite acumulada; se añadirá cobertura ante casos nuevos o defectos encontrados. Si usamos commits incrementales, cada cambio terminado debe quedar en verde y explicar el comportamiento agregado.
 
@@ -98,7 +98,7 @@ Combinar tests parametrizados de reglas con casos HTTP que ejerciten el parser r
 | Tipo de dato incorrecto o campo desconocido | 400; indicar la causa en inglés. |
 | JSON mal formado o cuerpo vacío | 400 con el formato común de error. |
 
-No forzar una interpretación de ajuste o devolución: los tests de negativos verifican aritmética, no un negocio que no definimos. La conversión de strings numéricos y la política de espacios Unicode requieren precisar el parser; no se aceptarán coerciones silenciosas por accidente.
+No forzar una interpretación de ajuste o devolución: los tests de negativos verifican aritmética, no un negocio que no definimos. El parser rechaza strings numéricos; la normalización usa `String.strip()`, `String.isBlank()` y `Locale.ROOT` para definir espacios y minúsculas sin depender del idioma de la máquina.
 
 ## Jerarquía y ciclos
 
@@ -252,7 +252,20 @@ Flujo propuesto: comprobar formato y lint, compilar, ejecutar reglas y arquitect
 | Docker | Construir imagen, esperar disponibilidad con plazo acotado y ejecutar un flujo crear → buscar → sumar → paginar. |
 | Reinicio del contenedor | Datos anteriores ausentes; no hay persistencia prometida. |
 
-Con Maven, Surefire puede ejecutar `*Test` y Failsafe `*IT`, integrados en la fase verify. El comando único, el wrapper y los controles de calidad se agregarán al configurar el proyecto. Hoy no existen: no presentamos comandos propuestos como comprobados.
+Surefire ejecuta `*Test`; Failsafe ejecuta `*IT` con servidor HTTP real. `./mvnw clean verify` integra tests, Checkstyle y Spotless sin corregir archivos. `./mvnw spotless:apply` formatea explícitamente. `docker build -t mendel-transactions:local .` ejecuta las mismas verificaciones dentro del build; `sh scripts/smoke-test.sh` comprueba la imagen resultante. CI ejecuta ambos pasos Docker.
+
+### Suite implementada
+
+| Archivo | Cobertura |
+| --- | --- |
+| `ApplicationTest` | Arranque de la configuración real de Spring. |
+| `InMemoryTransactionStoreTest` | Los tres mapas, reemplazos, copias inmodificables e independientes, orden numérico y extremos de long. |
+| `TransactionServiceTest` | Validaciones, normalización, ramas, ciclos, precisión, overflow y cadena de 20.000 nodos. |
+| `TransactionPaginationTest` | Tamaños 1, 100 y 1000, cursores, signos, Unicode y cambios entre páginas. |
+| `TransactionConcurrencyTest` | Lecturas simultáneas, exclusión, alcance del lock, ciclos concurrentes y último update aplicado. |
+| `TransactionApiIT` | Contrato sobre HTTP real, parser estricto, códigos y mensajes, reemplazos y navegación siguiendo Link. |
+| `ArchitectureTest` | Independencia de HTTP, acceso al almacenamiento a través del servicio y ausencia de ciclos entre paquetes. |
+| `scripts/smoke-test.sh` | Contenedor sin privilegios, ejemplos originales, paginación, rechazo sin cambios, reemplazo y datos ausentes al reiniciar. |
 
 Los tests funcionales no usan umbrales de milisegundos ni agotan memoria para buscar límites. Las cadenas profundas demuestran recorrido iterativo, no una capacidad ilimitada.
 
