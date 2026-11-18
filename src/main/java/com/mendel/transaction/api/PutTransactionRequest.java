@@ -33,7 +33,8 @@ record PutTransactionRequest(Double amount, String type, Long parentId) {
       }
       parentId = parent.longValue();
     }
-    return new PutTransactionRequest(amount.numberValue().doubleValue(), type.stringValue(), parentId);
+    return new PutTransactionRequest(
+        amount.numberValue().doubleValue(), type.stringValue(), parentId);
   }
 
   private static TransactionException invalid(String message) {

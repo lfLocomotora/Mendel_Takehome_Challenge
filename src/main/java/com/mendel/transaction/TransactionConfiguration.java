@@ -20,7 +20,8 @@ class TransactionConfiguration {
   }
 
   @Bean
-  TransactionService transactionService(TransactionStore store, TransactionAccessCoordinator access) {
+  TransactionService transactionService(
+      TransactionStore store, TransactionAccessCoordinator access) {
     return new TransactionService(store, access);
   }
 }

@@ -27,13 +27,18 @@ final class CursorCodec {
         throw new IllegalArgumentException("Missing cursor type");
       }
       id = buffer.getLong();
-      type = StandardCharsets.UTF_8.newDecoder()
-          .onMalformedInput(CodingErrorAction.REPORT).decode(buffer).toString();
+      type =
+          StandardCharsets.UTF_8
+              .newDecoder()
+              .onMalformedInput(CodingErrorAction.REPORT)
+              .decode(buffer)
+              .toString();
     } catch (IllegalArgumentException | CharacterCodingException exception) {
       throw new TransactionException(ErrorCode.INVALID_CURSOR, "The pagination cursor is invalid.");
     }
     if (!type.equals(expectedType)) {
-      throw new TransactionException(ErrorCode.INVALID_CURSOR,
+      throw new TransactionException(
+          ErrorCode.INVALID_CURSOR,
           "The pagination cursor does not match the requested transaction type.");
     }
     return id;

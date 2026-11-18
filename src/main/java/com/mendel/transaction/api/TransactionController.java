@@ -30,7 +30,8 @@ public final class TransactionController {
   }
 
   @PutMapping(value = "/{id}", consumes = "application/json", produces = "application/json")
-  public ResponseEntity<Map<String, String>> save(@PathVariable long id, @RequestBody JsonNode body) {
+  public ResponseEntity<Map<String, String>> save(
+      @PathVariable long id, @RequestBody JsonNode body) {
     var request = PutTransactionRequest.from(body);
     boolean created = service.save(id, request.amount(), request.type(), request.parentId());
     return ResponseEntity.status(created ? 201 : 200).body(Map.of("status", "ok"));
@@ -42,8 +43,8 @@ public final class TransactionController {
   }
 
   @GetMapping(value = "/types/{type}", produces = "application/json")
-  public ResponseEntity<List<Long>> byType(@PathVariable String type,
-      @RequestParam MultiValueMap<String, String> parameters) {
+  public ResponseEntity<List<Long>> byType(
+      @PathVariable String type, @RequestParam MultiValueMap<String, String> parameters) {
     validateParameters(parameters);
     String limit = parameters.getFirst("limit");
     String cursor = parameters.getFirst("cursor");
@@ -54,9 +55,13 @@ public final class TransactionController {
     var page = service.pageByType(type, pageSize, cursor);
     var response = ResponseEntity.ok();
     if (page.nextCursor() != null) {
-      URI next = UriComponentsBuilder.fromPath("/transactions/types/{type}")
-          .queryParam("limit", pageSize == null ? 100 : pageSize)
-          .queryParam("cursor", page.nextCursor()).encode().buildAndExpand(type).toUri();
+      URI next =
+          UriComponentsBuilder.fromPath("/transactions/types/{type}")
+              .queryParam("limit", pageSize == null ? 100 : pageSize)
+              .queryParam("cursor", page.nextCursor())
+              .encode()
+              .buildAndExpand(type)
+              .toUri();
       response.header(HttpHeaders.LINK, "<" + next.toASCIIString() + ">; rel=\"next\"");
     }
     return response.body(page.ids());
@@ -69,19 +74,20 @@ public final class TransactionController {
     try {
       return Integer.valueOf(limit);
     } catch (NumberFormatException exception) {
-      throw new TransactionException(ErrorCode.INVALID_REQUEST,
-          "Limit must be an integer between 1 and 1000.");
+      throw new TransactionException(
+          ErrorCode.INVALID_REQUEST, "Limit must be an integer between 1 and 1000.");
     }
   }
 
   private static void validateParameters(MultiValueMap<String, String> parameters) {
     for (var entry : parameters.entrySet()) {
       if (!Set.of("limit", "cursor").contains(entry.getKey())) {
-        throw new TransactionException(ErrorCode.INVALID_REQUEST,
-            "Unknown query parameter: " + entry.getKey() + ".");
+        throw new TransactionException(
+            ErrorCode.INVALID_REQUEST, "Unknown query parameter: " + entry.getKey() + ".");
       }
       if (entry.getValue().size() != 1) {
-        throw new TransactionException(ErrorCode.INVALID_REQUEST,
+        throw new TransactionException(
+            ErrorCode.INVALID_REQUEST,
             "Query parameter must occur only once: " + entry.getKey() + ".");
       }
     }

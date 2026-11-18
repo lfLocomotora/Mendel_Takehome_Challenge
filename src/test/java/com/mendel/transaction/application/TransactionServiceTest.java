@@ -19,7 +19,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class TransactionServiceTest {
   private final InMemoryTransactionStore store = new InMemoryTransactionStore();
-  private final TransactionService service = new TransactionService(store, new TransactionAccessCoordinator());
+  private final TransactionService service =
+      new TransactionService(store, new TransactionAccessCoordinator());
 
   @Test
   void createsReplacesAndNormalizesWithoutDuplicating() {
@@ -166,7 +167,8 @@ class TransactionServiceTest {
     assertEquals(20000, service.sum(0));
   }
 
-  private TransactionException assertError(ErrorCode code, org.junit.jupiter.api.function.Executable action) {
+  private TransactionException assertError(
+      ErrorCode code, org.junit.jupiter.api.function.Executable action) {
     var error = assertThrows(TransactionException.class, action);
     assertEquals(code, error.code());
     return error;

@@ -1,10 +1,10 @@
 package com.mendel.transaction.storage;
 
 import com.mendel.transaction.domain.Transaction;
-import java.util.List;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Optional;
@@ -32,7 +32,8 @@ public class InMemoryTransactionStore implements TransactionStore {
     }
     idsByType.computeIfAbsent(transaction.type(), ignored -> new TreeSet<>()).add(transaction.id());
     if (transaction.parentId() != null) {
-      childIdsByParent.computeIfAbsent(transaction.parentId(), ignored -> new HashSet<>())
+      childIdsByParent
+          .computeIfAbsent(transaction.parentId(), ignored -> new HashSet<>())
           .add(transaction.id());
     }
   }

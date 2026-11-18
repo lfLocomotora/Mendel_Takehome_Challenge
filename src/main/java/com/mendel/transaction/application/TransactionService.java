@@ -41,13 +41,17 @@ public final class TransactionService {
       double total = 0;
       while (!pending.isEmpty()) {
         long currentId = pending.pop();
-        Transaction transaction = store.find(currentId).orElseThrow(() ->
-            new TransactionException(ErrorCode.TRANSACTION_NOT_FOUND,
-                "Transaction with ID " + currentId + " does not exist."));
+        Transaction transaction =
+            store
+                .find(currentId)
+                .orElseThrow(() ->
+                    new TransactionException(
+                        ErrorCode.TRANSACTION_NOT_FOUND,
+                        "Transaction with ID " + currentId + " does not exist."));
         total += transaction.amount();
         if (!Double.isFinite(total)) {
-          throw new TransactionException(ErrorCode.SUM_OVERFLOW,
-              "The transaction sum exceeds the finite double range.");
+          throw new TransactionException(
+              ErrorCode.SUM_OVERFLOW, "The transaction sum exceeds the finite double range.");
         }
         var children = new ArrayList<>(store.childIds(currentId));
         children.sort(Comparator.reverseOrder());
@@ -66,8 +70,8 @@ public final class TransactionService {
     String normalizedType = normalizeType(type);
     int pageSize = limit == null ? 100 : limit;
     if (pageSize < 1 || pageSize > 1000) {
-      throw new TransactionException(ErrorCode.INVALID_REQUEST,
-          "Limit must be an integer between 1 and 1000.");
+      throw new TransactionException(
+          ErrorCode.INVALID_REQUEST, "Limit must be an integer between 1 and 1000.");
     }
     Long after = cursor == null ? null : CursorCodec.decode(cursor, normalizedType);
     return access.read(() -> {
@@ -90,13 +94,19 @@ public final class TransactionService {
     Long ancestor = parentId;
     while (ancestor != null) {
       if (ancestor == id) {
-        throw new TransactionException(ErrorCode.CYCLE_DETECTED,
+        throw new TransactionException(
+            ErrorCode.CYCLE_DETECTED,
             "Parent relationship would create a cycle for transaction " + id + ".");
       }
       long ancestorId = ancestor;
-      ancestor = store.find(ancestorId).orElseThrow(() ->
-          new TransactionException(ErrorCode.PARENT_NOT_FOUND,
-              "Parent transaction with ID " + ancestorId + " does not exist.")).parentId();
+      ancestor =
+          store
+              .find(ancestorId)
+              .orElseThrow(() ->
+                  new TransactionException(
+                      ErrorCode.PARENT_NOT_FOUND,
+                      "Parent transaction with ID " + ancestorId + " does not exist."))
+              .parentId();
     }
   }
 }

@@ -1,8 +1,8 @@
 package com.mendel.transaction.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -10,14 +10,14 @@ import com.mendel.transaction.concurrency.TransactionAccessCoordinator;
 import com.mendel.transaction.domain.ErrorCode;
 import com.mendel.transaction.domain.TransactionException;
 import com.mendel.transaction.storage.InMemoryTransactionStore;
-import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class TransactionPaginationTest {
-  private final TransactionService service = new TransactionService(new InMemoryTransactionStore(), new TransactionAccessCoordinator());
+  private final TransactionService service =
+      new TransactionService(new InMemoryTransactionStore(), new TransactionAccessCoordinator());
 
   @Test
   void continuesAcrossSignedIdsAndStopsOnAnExactlyFullLastPage() {
@@ -71,14 +71,16 @@ class TransactionPaginationTest {
   @ParameterizedTest
   @ValueSource(ints = {-1, 0, 1001, Integer.MAX_VALUE})
   void rejectsOutOfRangePageSizes(int limit) {
-    var error = assertThrows(TransactionException.class, () -> service.pageByType("cars", limit, null));
+    var error =
+        assertThrows(TransactionException.class, () -> service.pageByType("cars", limit, null));
     assertEquals(ErrorCode.INVALID_REQUEST, error.code());
   }
 
   @ParameterizedTest
   @ValueSource(strings = {"", "!invalid", "abc", "aA=="})
   void rejectsMalformedCursors(String cursor) {
-    var error = assertThrows(TransactionException.class, () -> service.pageByType("cars", 1, cursor));
+    var error =
+        assertThrows(TransactionException.class, () -> service.pageByType("cars", 1, cursor));
     assertEquals(ErrorCode.INVALID_CURSOR, error.code());
     assertEquals("The pagination cursor is invalid.", error.getMessage());
   }
@@ -88,9 +90,13 @@ class TransactionPaginationTest {
     service.save(1, 1.0, "cars", null);
     service.save(2, 1.0, "cars", null);
     var first = service.pageByType("cars", 1, null);
-    var error = assertThrows(TransactionException.class, () -> service.pageByType("shopping", 1, first.nextCursor()));
+    var error =
+        assertThrows(
+            TransactionException.class,
+            () -> service.pageByType("shopping", 1, first.nextCursor()));
     assertEquals(ErrorCode.INVALID_CURSOR, error.code());
-    assertEquals("The pagination cursor does not match the requested transaction type.", error.getMessage());
+    assertEquals(
+        "The pagination cursor does not match the requested transaction type.", error.getMessage());
   }
 
   @Test
