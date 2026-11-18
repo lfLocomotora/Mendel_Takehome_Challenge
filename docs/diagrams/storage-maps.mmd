@@ -1,0 +1,14 @@
+flowchart TD
+    subgraph Auxiliares["Dos mapas auxiliares: guardan IDs"]
+        T["<div style='width:340px;line-height:1.6;white-space:nowrap'><b style='font-size:25px'>idsByType</b><br/><span style='font-size:16px'>Map: tipo → conjunto ordenado de IDs</span><br/><br/>cars → [10]<br/>shopping → [11, 12]<br/>fees → [13]</div>"]
+        P["<div style='width:340px;line-height:1.6;white-space:nowrap'><b style='font-size:25px'>childIdsByParent</b><br/><span style='font-size:16px'>Map: padre → conjunto de IDs de hijos</span><br/><br/>10 → [11, 13]<br/>11 → [12]</div>"]
+    end
+    T -->|"Resolver cada ID"| M
+    P -->|"Resolver cada ID"| M
+    M["<div style='width:740px;line-height:1.8;white-space:nowrap'><b style='font-size:25px'>transactionsById</b> <span style='font-size:16px'>(mapa principal)</span><br/><span style='font-size:17px'>Map: ID → Transaction inmutable</span><br/><br/><div style='text-align:left;padding-left:70px'>10 → monto 5000 · cars · sin padre<br/>11 → monto 10000 · shopping · padre 10<br/>12 → monto 5000 · shopping · padre 11<br/>13 → monto 100 · fees · padre 10</div></div>"]
+    style Auxiliares fill:transparent,stroke:transparent
+    style T fill:#f8fafc,stroke:#94a3b8
+    style P fill:#f8fafc,stroke:#94a3b8
+    style M fill:#f8fafc,stroke:#94a3b8
+    linkStyle 0 stroke:#2563eb,stroke-width:3px,color:#1d4ed8
+    linkStyle 1 stroke:#d97706,stroke-width:3px,color:#b45309

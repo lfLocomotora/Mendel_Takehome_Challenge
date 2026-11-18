@@ -1,0 +1,30 @@
+stateDiagram-v2
+    [*] --> Interpretar
+    state "Interpretar tipo y parámetros" as Interpretar
+    state "Normalizar tipo y validar petición" as Validar
+    state "Responder 400 con error específico" as ErrorEntrada
+    state "Esperar lock de lectura" as Esperar
+    state "Consultar índice del tipo" as Consultar
+    state Modalidad <<choice>>
+    state "Copiar todos los IDs sin orden garantizado" as Completa
+    state "Obtener y copiar página ascendente" as Pagina
+    state "Comprobar si hay otra página" as Continuacion
+    state "Liberar lock de lectura" as Liberar
+    state "Construir respuesta y Link si corresponde" as Respuesta
+    state "Responder 200 con array de IDs" as Exito
+    Interpretar --> ErrorEntrada: Formato inválido
+    Interpretar --> Validar: Formato correcto
+    Validar --> ErrorEntrada: Tipo o limit inválido
+    Validar --> ErrorEntrada: Cursor inválido o de otro tipo
+    Validar --> Esperar: Petición válida
+    Esperar --> Consultar: Lock adquirido
+    Consultar --> Modalidad
+    Modalidad --> Completa: Sin limit ni cursor
+    Modalidad --> Pagina: Con limit o cursor
+    Pagina --> Continuacion
+    Completa --> Liberar
+    Continuacion --> Liberar
+    Liberar --> Respuesta
+    Respuesta --> Exito
+    ErrorEntrada --> [*]
+    Exito --> [*]

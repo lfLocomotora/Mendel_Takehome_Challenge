@@ -1,0 +1,17 @@
+stateDiagram-v2
+    [*] --> Inicio
+    state "Resolver tamaño y posición inicial" as Inicio
+    state "Seleccionar IDs mayores al cursor en orden ascendente" as Seleccionar
+    state "Copiar hasta limit IDs" as Copiar
+    state HayMas <<choice>>
+    state "Preparar posición para Link next" as ConNext
+    state "Sin Link next" as SinNext
+    state "Página y continuación resueltas" as Fin
+    Inicio --> Seleccionar
+    Seleccionar --> Copiar
+    Copiar --> HayMas
+    HayMas --> ConNext: Hay otro ID después de la página
+    HayMas --> SinNext: No hay más resultados
+    ConNext --> Fin
+    SinNext --> Fin
+    Fin --> [*]

@@ -1,0 +1,9 @@
+flowchart LR
+    subgraph Referencias["Referencias directas sin actualizar"]
+        A["Mapa ID 10"] --> N["Objeto nuevo · monto 200"]
+        B["Mapa por tipo o padre"] --> V["Objeto anterior · monto 100"]
+    end
+    subgraph IDs["Mapas auxiliares por IDs"]
+        I["Mapa auxiliar contiene 10"] --> P["Resolver 10 en mapa principal"]
+        P --> T["Objeto actual · monto 200"]
+    end

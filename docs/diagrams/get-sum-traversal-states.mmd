@@ -1,0 +1,22 @@
+stateDiagram-v2
+    [*] --> Inicializar
+    state "Total = 0 y pila con ID inicial" as Inicializar
+    state HayPendientes <<choice>>
+    state "Extraer ID de la pila" as Extraer
+    state "Obtener Transaction del mapa principal" as Obtener
+    state "Acumular su monto con double" as Acumular
+    state Finito <<choice>>
+    state "Apilar hijos en orden descendente de ID" as Hijos
+    state "Suma terminada" as Exito
+    state "Detener con SUM_OVERFLOW" as Desbordamiento
+    Inicializar --> HayPendientes
+    HayPendientes --> Extraer: Sí
+    HayPendientes --> Exito: No
+    Extraer --> Obtener
+    Obtener --> Acumular
+    Acumular --> Finito
+    Finito --> Hijos: Total finito
+    Finito --> Desbordamiento: Total no finito
+    Hijos --> HayPendientes
+    Exito --> [*]
+    Desbordamiento --> [*]

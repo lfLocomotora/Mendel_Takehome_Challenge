@@ -1,0 +1,15 @@
+stateDiagram-v2
+    direction TB
+    [*] --> Ausente
+    state "ID no registrado" as Ausente
+    state "ID registrado" as Registrada
+    Ausente --> Registrada: PUT válido / 201
+    Registrada --> Ausente: Reinicio
+    note left of Ausente
+        PUT rechazado:
+        permanece ausente
+    end note
+    note right of Registrada
+        PUT válido: reemplazar / 200
+        PUT rechazado: conservar estado
+    end note

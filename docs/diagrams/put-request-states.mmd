@@ -1,0 +1,18 @@
+stateDiagram-v2
+    [*] --> Interpretar
+    state "Interpretar URL y JSON" as Interpretar
+    state "Normalizar tipo y validar datos" as Validar
+    state "Esperar lock de escritura" as Esperar
+    state "Validar relaciones y guardar" as Guardar
+    state "Liberar lock de escritura" as Liberar
+    state "Responder resultado" as Responder
+    state "Responder 400 INVALID_REQUEST" as ErrorEntrada
+    Interpretar --> ErrorEntrada: Formato o campos inválidos
+    Interpretar --> Validar: Formato correcto
+    Validar --> ErrorEntrada: Datos inválidos
+    Validar --> Esperar: Datos válidos
+    Esperar --> Guardar: Lock adquirido
+    Guardar --> Liberar: Éxito o rechazo de negocio
+    Liberar --> Responder
+    ErrorEntrada --> [*]
+    Responder --> [*]

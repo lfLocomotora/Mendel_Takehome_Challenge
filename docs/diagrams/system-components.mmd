@@ -1,0 +1,4 @@
+flowchart TD
+    C["Controller"] --> S["Servicio"]
+    S --> M["Almacenamiento"]
+    S -. "Error" .-> E["Exception handler"]

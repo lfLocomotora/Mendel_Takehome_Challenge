@@ -1,0 +1,27 @@
+stateDiagram-v2
+    [*] --> Interpretar
+    state "Interpretar ID como long" as Interpretar
+    state "Responder 400 INVALID_REQUEST" as ErrorEntrada
+    state "Esperar lock de lectura" as Esperar
+    state "Buscar transacción inicial" as Buscar
+    state Existe <<choice>>
+    state "Preparar 404 TRANSACTION_NOT_FOUND" as NoEncontrada
+    state "Ejecutar recorrido iterativo" as Recorrer
+    state "Preparar 200 con sum" as Suma
+    state "Preparar 409 SUM_OVERFLOW" as Desbordamiento
+    state "Liberar lock de lectura" as Liberar
+    state "Responder" as Responder
+    Interpretar --> ErrorEntrada: ID inválido o fuera de rango
+    Interpretar --> Esperar: ID válido
+    Esperar --> Buscar: Lock adquirido
+    Buscar --> Existe
+    Existe --> NoEncontrada: No existe
+    Existe --> Recorrer: Existe
+    Recorrer --> Suma: Acumulación finita
+    Recorrer --> Desbordamiento: Desbordamiento
+    NoEncontrada --> Liberar
+    Suma --> Liberar
+    Desbordamiento --> Liberar
+    Liberar --> Responder
+    ErrorEntrada --> [*]
+    Responder --> [*]

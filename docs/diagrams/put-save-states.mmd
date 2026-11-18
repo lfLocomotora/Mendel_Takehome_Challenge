@@ -1,0 +1,30 @@
+stateDiagram-v2
+    [*] --> Autorreferencia
+    state "Comprobar autorreferencia" as Autorreferencia
+    state "Comprobar padre propuesto" as Padre
+    state "Comprobar ciclos indirectos" as Ciclos
+    state Existe <<choice>>
+    state "Crear nueva Transaction inmutable" as Crear
+    state "Construir Transaction de reemplazo" as Reemplazar
+    state "Guardar nueva transacción e índices" as GuardarNueva
+    state "Reemplazar estado y actualizar índices" as GuardarReemplazo
+    state "Resultado 201 Created" as Creada
+    state "Resultado 200 OK" as Actualizada
+    state "Rechazo 409 PARENT_NOT_FOUND" as FaltaPadre
+    state "Rechazo 409 CYCLE_DETECTED" as HayCiclo
+    Autorreferencia --> HayCiclo: El padre es el propio ID
+    Autorreferencia --> Padre: No hay autorreferencia
+    Padre --> FaltaPadre: Padre informado pero inexistente
+    Padre --> Ciclos: Padre existente o sin padre
+    Ciclos --> HayCiclo: El cambio cierra un ciclo
+    Ciclos --> Existe: Relación válida
+    Existe --> Crear: ID nuevo
+    Existe --> Reemplazar: ID existente
+    Crear --> GuardarNueva
+    Reemplazar --> GuardarReemplazo
+    GuardarNueva --> Creada
+    GuardarReemplazo --> Actualizada
+    Creada --> [*]
+    Actualizada --> [*]
+    FaltaPadre --> [*]
+    HayCiclo --> [*]
