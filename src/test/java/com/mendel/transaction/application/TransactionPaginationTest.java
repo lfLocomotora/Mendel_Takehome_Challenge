@@ -40,6 +40,19 @@ class TransactionPaginationTest {
   }
 
   @Test
+  void acceptsTheMaximumPageSizeAndCopiesItsResults() {
+    for (long id = 0; id < 1001; id++) {
+      service.save(id, 0.0, "cars", null);
+    }
+    var page = service.pageByType("cars", 1000, null);
+    assertEquals(1000, page.ids().size());
+    assertEquals(0L, page.ids().getFirst());
+    assertEquals(999L, page.ids().getLast());
+    assertThrows(UnsupportedOperationException.class, () -> page.ids().clear());
+    assertEquals(List.of(1000L), service.pageByType("cars", 1000, page.nextCursor()).ids());
+  }
+
+  @Test
   void defaultsToOneHundredWhenOnlyCursorIsPresent() {
     for (long id = 0; id < 103; id++) {
       service.save(id, 0.0, "cars", null);

@@ -3,6 +3,7 @@ package com.mendel.transaction.storage;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.mendel.transaction.domain.Transaction;
@@ -44,9 +45,12 @@ class InMemoryTransactionStoreTest {
     store.save(new Transaction(2, 5, "cars", 10L));
     assertEquals(List.of(1L), types);
     assertEquals(List.of(1L), children);
-    var mutableCopy = new java.util.ArrayList<>(store.idsByType("cars"));
-    mutableCopy.clear();
+    assertThrows(UnsupportedOperationException.class, () -> types.clear());
+    assertThrows(UnsupportedOperationException.class, () -> children.clear());
+    var page = store.idsAfter("cars", null, 1);
+    assertThrows(UnsupportedOperationException.class, () -> page.clear());
     assertEquals(2, store.idsByType("cars").size());
+    assertEquals(2, store.childIds(10).size());
   }
 
   @Test
