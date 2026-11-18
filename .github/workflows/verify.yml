@@ -1,0 +1,19 @@
+name: Verify
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Build and run all Java checks
+        run: docker build -t mendel-transactions:local .
+      - name: Verify the running container
+        run: sh scripts/smoke-test.sh
