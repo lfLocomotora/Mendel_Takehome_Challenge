@@ -62,6 +62,23 @@ public final class TransactionService {
     return access.read(() -> store.idsByType(normalizedType));
   }
 
+  public TransactionPage pageByType(String type, Integer limit, String cursor) {
+    String normalizedType = normalizeType(type);
+    int pageSize = limit == null ? 100 : limit;
+    if (pageSize < 1 || pageSize > 1000) {
+      throw new TransactionException(ErrorCode.INVALID_REQUEST,
+          "Limit must be an integer between 1 and 1000.");
+    }
+    Long after = cursor == null ? null : CursorCodec.decode(cursor, normalizedType);
+    return access.read(() -> {
+      List<Long> candidates = store.idsAfter(normalizedType, after, pageSize + 1);
+      boolean hasMore = candidates.size() > pageSize;
+      List<Long> ids = hasMore ? candidates.subList(0, pageSize) : candidates;
+      String nextCursor = hasMore ? CursorCodec.encode(normalizedType, ids.getLast()) : null;
+      return new TransactionPage(ids, nextCursor);
+    });
+  }
+
   static String normalizeType(String type) {
     if (type == null || type.isBlank()) {
       throw new TransactionException(ErrorCode.INVALID_REQUEST, "Type must be a non-blank string.");
