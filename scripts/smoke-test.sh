@@ -92,6 +92,15 @@ request 200 PUT /transactions/12 '{"amount":-5,"type":"adjustment"}'
 request 200 GET /transactions/sum/10
 expect_body '{"sum":15000.0}'
 
+request 201 PUT /transactions/13 '{"amount":1,"type":"food/drink"}'
+request 201 PUT /transactions/14 '{"amount":2,"type":"food/drink"}'
+request 200 GET '/transactions/types/food%2Fdrink?limit=1'
+expect_body '[13]'
+next=$(sed -n 's/^[Ll]ink: <\([^>]*\)>; rel="next".*/\1/p' "$temporary/headers")
+test -n "$next"
+request 200 GET "$next"
+expect_body '[14]'
+
 docker restart "$container" >/dev/null
 port=$(docker port "$container" 8080/tcp)
 base="http://$port"

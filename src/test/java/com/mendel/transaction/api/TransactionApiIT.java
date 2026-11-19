@@ -69,6 +69,38 @@ class TransactionApiIT {
 
   @ParameterizedTest
   @ValueSource(
+      strings = {"food/drink", "food%2Fdrink", "food\\drink", "food;drink", "food?drink#extra"})
+  void retrievesAndPaginatesTypesContainingReservedUrlCharacters(String type) throws Exception {
+    for (long id : List.of(1L, 2L)) {
+      assertEquals(
+          201,
+          put(id, json.writeValueAsString(java.util.Map.of("amount", 1, "type", type)))
+              .statusCode());
+    }
+    String path =
+        "/transactions/types/"
+            + URLEncoder.encode(type, StandardCharsets.UTF_8).replace("+", "%20");
+    var all = get(path);
+    assertEquals(200, all.statusCode(), all.body());
+    assertEquals("[1,2]", all.body());
+    var first = get(path + "?limit=1");
+    assertEquals(200, first.statusCode(), first.body());
+    assertEquals("[1]", first.body());
+    var last = get(nextLink(first));
+    assertEquals(200, last.statusCode(), last.body());
+    assertEquals("[2]", last.body());
+    assertTrue(last.headers().firstValue("Link").isEmpty());
+  }
+
+  @Test
+  void treatsCaseVariantsAsTheSameCategoryByDesign() throws Exception {
+    assertEquals(201, put(1, "{\"amount\":1,\"type\":\"Cars\"}").statusCode());
+    assertEquals(201, put(2, "{\"amount\":1,\"type\":\"cars\"}").statusCode());
+    assertEquals("[1,2]", get("/transactions/types/CARS").body());
+  }
+
+  @ParameterizedTest
+  @ValueSource(
       strings = {
         "",
         "null",
