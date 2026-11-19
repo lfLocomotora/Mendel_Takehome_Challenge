@@ -77,6 +77,8 @@ curl -i 'http://localhost:8080/transactions/types/shopping?limit=1'
 
 El cuerpo sigue siendo un array: `[11]`. Si quedan IDs, el header `Link: <...>; rel="next"` contiene una URL relativa que se puede seguir sobre el mismo servidor. La continuación usa IDs ascendentes y conserva el tipo; el cursor es opaco para el cliente. Solo `cursor` usa tamaño 100. Sin parámetros se devuelve la lista completa. Parámetros desconocidos o repetidos se rechazan.
 
+El tipo ocupa un segmento de URL: sus caracteres reservados deben codificarse. Por ejemplo, un movimiento de tipo `food/drink` se consulta con `/transactions/types/food%2Fdrink`. Los enlaces de paginación ya incluyen esa codificación. `Cars` y `cars` pertenecen a la misma categoría por decisión de diseño: consultar cualquiera devuelve los IDs de ambas variantes.
+
 Los errores esperados tienen este formato y mensajes en inglés:
 
 ```json

@@ -38,6 +38,8 @@ Las flechas van del padre al hijo. La jerarquía no implica usar un árbol de b�
 
 Exigir un padre existente simplifica las consultas, pero obliga a cargar padres antes que hijos. Prohibimos ciclos por su significado de negocio; al cambiar un padre hay que comprobar los antecesores del padre propuesto para no cerrar uno.
 
+Un ID nuevo solo necesita comprobar autorreferencia y existencia del padre: todavía no puede pertenecer a sus antecesores. Un reemplazo que conserva el padre tampoco cambia la jerarquía. Recorremos antecesores únicamente al cambiar el padre de un ID existente. Esto evita validaciones cuadráticas al crear cadenas; mantener los IDs ordenados por tipo sigue costando O(log n) por inserción. Todo ocurre bajo el mismo lock de escritura.
+
 Estas son interpretaciones del ejercicio, no reglas universales del dominio financiero. Con más contexto podríamos exigir movimientos definitivos, correcciones mediante nuevos registros o auditoría, en lugar de permitir reemplazos. Del mismo modo, la jerarquía tendría que validarse contra el significado real de la relación.
 
 ## Datos de entrada
@@ -57,6 +59,10 @@ Usar solo IDs no negativos permitiría aprovechar el mayor máximo de un tipo `u
 También admitimos montos positivos, cero y negativos dentro del rango finito de `double`: la consigna no impone un signo ni un máximo de negocio. Un negativo resta en la suma y podría representar un ajuste o devolución, pero no implementamos esas semánticas. Con más contexto podrían definirse importes máximos, reglas por tipo o restricciones de signo; no las inventamos para el ejercicio.
 
 Normalizar el tipo evita categorías separadas por mayúsculas o espacios, pero pierde la escritura original. Rechazar campos desconocidos detecta errores del cliente a cambio de una entrada menos tolerante.
+
+La consigna no define sensibilidad a mayúsculas: elegimos que `Cars` y `cars` sean una categoría y sus IDs se consulten juntos. No es una regla impuesta por el enunciado.
+
+Los tipos con caracteres reservados se codifican como un único segmento de URL: `food/drink` → `food%2Fdrink`. Tomcat conserva barras codificadas y Spring decodifica el segmento una vez, también al seguir `Link`. Un tipo que contiene literalmente `%2F` usa `%252F`; no se confunde con una barra. [Configuración de Tomcat](https://tomcat.apache.org/tomcat-11.0-doc/config/http.html).
 
 ## Creación y reemplazo
 

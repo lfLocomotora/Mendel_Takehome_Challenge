@@ -94,6 +94,8 @@ Combinar tests parametrizados de reglas con casos HTTP que ejerciten el parser r
 | Monto fuera de rango finito | 400. |
 | NaN o infinito | Rechazados; probar tanto reglas internas como entrada HTTP inválida. |
 | Tipo cars, Cars y espacios externos | Misma categoría normalizada cars. |
+| Dos movimientos Cars y cars | Una consulta devuelve los IDs de ambos; decisión explícita de normalización. |
+| Tipo con barra, contrabarra, punto y coma, porcentaje, ? o # | Guardar y consultar mediante URL codificada; seguir Link hasta la última página. Sin doble decodificación. |
 | Tipo ausente, null, vacío o solo espacios | 400 con mensaje específico. |
 | Tipo de dato incorrecto o campo desconocido | 400; indicar la causa en inglés. |
 | JSON mal formado o cuerpo vacío | 400 con el formato común de error. |
@@ -111,6 +113,8 @@ No forzar una interpretación de ajuste o devolución: los tests de negativos ve
 | Ciclo indirecto de varios niveles | Rechazar; no revisar solo el padre inmediato. |
 | Poner un descendiente como padre | Rechazar sin cambiar monto, tipo ni asociaciones. |
 | Mantener el padre actual | Update válido, sin duplicar asociaciones. |
+| Crear una cadena con IDs nuevos | Hasta dos búsquedas de registros por alta; no recorrer antecesores ya validados. |
+| Reemplazar sin cambiar padre | Solo buscar el registro existente; no recorrer su jerarquía. |
 | Mover a una rama independiente | Update válido; jerarquía coherente. |
 
 ## Consultas y suma
