@@ -97,6 +97,10 @@ Combinar tests parametrizados de reglas con casos HTTP que ejerciten el parser r
 | Dos movimientos Cars y cars | Una consulta devuelve los IDs de ambos; decisión explícita de normalización. |
 | Tipo con barra, contrabarra, punto y coma, porcentaje, ? o # | Guardar y consultar mediante URL codificada; seguir Link hasta la última página. Sin doble decodificación. |
 | Tipo ausente, null, vacío o solo espacios | 400 con mensaje específico. |
+| Tipo normalizado `.` o `..`, NUL o surrogate aislado | 400 al crear o reemplazar; conservar todos los datos previos. |
+| Tipo de 1024 bytes UTF-8 normalizados | Aceptado con ASCII, acentos y pares surrogate válidos; consultar y seguir Link. |
+| Tipo de más de 1024 bytes UTF-8 normalizados | 400, también si las minúsculas expanden el texto. No contar caracteres como bytes. |
+| Consulta con espacios y mayúsculas en el tipo | Link usa el valor normalizado; el padding del request no se propaga. |
 | Tipo de dato incorrecto o campo desconocido | 400; indicar la causa en inglés. |
 | JSON mal formado o cuerpo vacío | 400 con el formato común de error. |
 

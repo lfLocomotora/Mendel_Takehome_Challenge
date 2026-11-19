@@ -12,7 +12,7 @@ API para guardar movimientos editables, buscar sus IDs por tipo y sumar una tran
 | Entrega | Aplicación dockerizada, tests de integración y repositorio GitHub o Bitbucket. |
 | Extensión | Paginación opcional en la búsqueda por tipo. |
 | Fuera de alcance | Versioning, autenticación, rate limiting, interfaz visual, borrado e historial de cambios. |
-| Capacidad | Sin límites de negocio adicionales para cantidad, profundidad o longitud del tipo. La memoria disponible limita la capacidad. |
+| Capacidad | Sin límites de negocio adicionales para cantidad o profundidad. Tipo: máximo técnico de 1024 bytes UTF-8 normalizados. La memoria disponible limita la capacidad. |
 
 La entrega prioriza el contrato y las reglas del challenge. La paginación agrega utilidad y pruebas; autenticación, persistencia y operación con varias instancias quedan para una evolución de producción.
 
@@ -48,8 +48,8 @@ Estas son interpretaciones del ejercicio, no reglas universales del dominio fina
 | --- | --- |
 | ID y padre | Enteros de todo el rango de `long`, incluidos cero y negativos. Sin truncamiento. |
 | Monto | `double` finito, obligatorio. Admite positivos, cero y negativos. |
-| Tipo | Obligatorio. Quitar espacios externos y convertir a minúsculas al guardar y consultar. |
-| Tipo inválido | Rechazar ausente, nulo, vacío o compuesto solo por espacios. |
+| Tipo | Obligatorio. Quitar espacios externos y convertir a minúsculas al guardar y consultar. Máximo: 1024 bytes UTF-8 después de normalizar. |
+| Tipo inválido | Rechazar ausente, nulo, vacío, solo espacios, Unicode mal formado, NUL y los valores normalizados `.` y `..`. |
 | Otros campos | Rechazar campos desconocidos y tipos de datos inválidos. |
 
 El cliente elige el ID. Aceptamos cualquier entero dentro de `long`, incluido cero y negativos, porque la consigna no restringe su signo. Un ID es un identificador: su signo no garantiza unicidad ni mejora por sí solo la escalabilidad. Rechazamos fracciones y valores fuera del rango, sin redondearlos.
@@ -63,6 +63,10 @@ Normalizar el tipo evita categorías separadas por mayúsculas o espacios, pero 
 La consigna no define sensibilidad a mayúsculas: elegimos que `Cars` y `cars` sean una categoría y sus IDs se consulten juntos. No es una regla impuesta por el enunciado.
 
 Los tipos con caracteres reservados se codifican como un único segmento de URL: `food/drink` → `food%2Fdrink`. Tomcat conserva barras codificadas y Spring decodifica el segmento una vez, también al seguir `Link`. Un tipo que contiene literalmente `%2F` usa `%252F`; no se confunde con una barra. [Configuración de Tomcat](https://tomcat.apache.org/tomcat-11.0-doc/config/http.html).
+
+Los límites del tipo son decisiones técnicas adicionales al enunciado: evitan guardar valores que HTTP no permite recuperar y segmentos que los clientes normalizan como rutas. Un surrogate aislado se rechaza como Unicode mal formado; NUL es Unicode válido, pero incompatible con la ruta HTTP.
+
+Con 1024 bytes, la ruta codificada ocupa hasta 3072 bytes y el cursor hasta 1376. El Link completo queda por debajo de 4,6 KB, dejando margen bajo los límites predeterminados del servidor. Se valida después de normalizar, ya que convertir a minúsculas puede expandir Unicode. Los enlaces usan siempre ese tipo normalizado. Preferimos estas validaciones a ampliar headers, agregar otra consulta o cambiar el cursor; restringen entradas, pero mantienen una implementación pequeña.
 
 ## Creación y reemplazo
 
