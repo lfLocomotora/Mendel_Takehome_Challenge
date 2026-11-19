@@ -60,7 +60,7 @@ public final class TransactionController {
               .queryParam("limit", pageSize == null ? 100 : pageSize)
               .queryParam("cursor", page.nextCursor())
               .encode()
-              .buildAndExpand(type)
+              .buildAndExpand(page.type())
               .toUri();
       response.header(HttpHeaders.LINK, "<" + next.toASCIIString() + ">; rel=\"next\"");
     }

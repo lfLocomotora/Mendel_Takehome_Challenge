@@ -117,6 +117,49 @@ class TransactionServiceTest {
     assertError(ErrorCode.INVALID_REQUEST, () -> service.idsByType(type));
   }
 
+  @ParameterizedTest
+  @ValueSource(
+      strings = {".", "..", " . ", "a\u0000b", "\uD800", "\uDC00", "a\uD800b", "\uDC00\uD800"})
+  void rejectsTypesThatCannotRoundTripWithoutChangingStoredState(String type) {
+    service.save(1, 2.0, "cars", null);
+    assertError(ErrorCode.INVALID_REQUEST, () -> service.save(1, 99.0, type, null));
+    assertError(ErrorCode.INVALID_REQUEST, () -> service.save(2, 99.0, type, null));
+    assertError(ErrorCode.INVALID_REQUEST, () -> service.idsByType(type));
+    assertError(ErrorCode.INVALID_REQUEST, () -> service.pageByType(type, 1, null));
+    assertEquals(List.of(1L), service.idsByType("cars"));
+    assertEquals(2, service.sum(1));
+    assertTrue(store.find(2).isEmpty());
+  }
+
+  @Test
+  void rejectsTypesExceedingTheNormalizedUtf8ByteLimit() {
+    service.save(1, 2.0, "cars", null);
+    for (String type : List.of("a".repeat(1025), "é".repeat(513), "\u0130".repeat(342))) {
+      var error = assertError(ErrorCode.INVALID_REQUEST, () -> service.save(1, 99.0, type, null));
+      assertEquals(
+          "Type must not exceed 1024 UTF-8 bytes after normalization.", error.getMessage());
+      assertError(ErrorCode.INVALID_REQUEST, () -> service.idsByType(type));
+      assertError(ErrorCode.INVALID_REQUEST, () -> service.pageByType(type, 1, null));
+      assertEquals(2, service.sum(1));
+      assertEquals(List.of(1L), service.idsByType("cars"));
+    }
+  }
+
+  @Test
+  void acceptsWellFormedUnicodeAtTheNormalizedUtf8Limit() {
+    long id = 0;
+    for (String type :
+        List.of("a".repeat(1024), "é".repeat(512), "😀".repeat(256), "\u0130".repeat(341))) {
+      long firstId = id++;
+      long secondId = id++;
+      assertTrue(service.save(firstId, 1.0, " " + type + " ", null));
+      assertTrue(service.save(secondId, 1.0, type, null));
+      var page = service.pageByType(type, 1, null);
+      assertEquals(List.of(firstId), page.ids());
+      assertEquals(List.of(secondId), service.pageByType(type, 1, page.nextCursor()).ids());
+    }
+  }
+
   @Test
   void normalizesIndependentlyOfTheMachineLocale() {
     Locale previous = Locale.getDefault();

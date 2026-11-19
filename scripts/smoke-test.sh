@@ -101,6 +101,14 @@ test -n "$next"
 request 200 GET "$next"
 expect_body '[14]'
 
+request 400 PUT /transactions/15 '{"amount":99,"type":"."}'
+request 400 PUT /transactions/10 '{"amount":99,"type":"a\u0000b"}'
+request 400 PUT /transactions/10 '{"amount":99,"type":"\uD800"}'
+oversized_type=$(printf '%1025s' '' | tr ' ' 'a')
+request 400 PUT /transactions/10 "{\"amount\":99,\"type\":\"$oversized_type\"}"
+request 200 GET /transactions/sum/10
+expect_body '{"sum":15000.0}'
+
 docker restart "$container" >/dev/null
 port=$(docker port "$container" 8080/tcp)
 base="http://$port"

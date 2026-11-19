@@ -102,6 +102,85 @@ class TransactionApiIT {
   @ParameterizedTest
   @ValueSource(
       strings = {
+        ".",
+        "..",
+        " . ",
+        "a\\u0000b",
+        "\\uD800",
+        "\\uDC00",
+        "a\\uD800b",
+        "\\u002e\\u002e"
+      })
+  void rejectsUnusableTypesBeforeCreatingOrReplacing(String jsonType) throws Exception {
+    assertEquals(201, put(1, "{\"amount\":2,\"type\":\"cars\"}").statusCode());
+    String body = "{\"amount\":99,\"type\":\"" + jsonType + "\"}";
+    assertError(put(1, body), 400, "INVALID_REQUEST");
+    assertError(put(2, body), 400, "INVALID_REQUEST");
+    assertEquals("[1]", get("/transactions/types/cars").body());
+    assertEquals(2, json.readTree(get("/transactions/sum/1").body()).get("sum").doubleValue());
+    assertError(get("/transactions/sum/2"), 404, "TRANSACTION_NOT_FOUND");
+  }
+
+  @Test
+  void rejectsOversizedTypesAtTheHttpBoundaryWithoutChangingState() throws Exception {
+    assertEquals(201, put(1, "{\"amount\":2,\"type\":\"cars\"}").statusCode());
+    for (String type : List.of("a".repeat(1025), "é".repeat(513), "\u0130".repeat(342))) {
+      String body = json.writeValueAsString(java.util.Map.of("amount", 99, "type", type));
+      assertError(put(1, body), 400, "INVALID_REQUEST");
+      assertError(put(2, body), 400, "INVALID_REQUEST");
+      assertEquals("[1]", get("/transactions/types/cars").body());
+      assertEquals(2, json.readTree(get("/transactions/sum/1").body()).get("sum").doubleValue());
+      assertError(get("/transactions/sum/2"), 404, "TRANSACTION_NOT_FOUND");
+    }
+  }
+
+  @Test
+  void paginatesBoundaryTypesWithLinksThatFitTheDefaultTransportLimits() throws Exception {
+    long id = 0;
+    for (String type :
+        List.of("a".repeat(1024), "é".repeat(512), "😀".repeat(256), "\u0130".repeat(341))) {
+      long firstId = id++;
+      long secondId = id++;
+      String body = json.writeValueAsString(java.util.Map.of("amount", 1, "type", type));
+      assertEquals(201, put(firstId, body).statusCode());
+      assertEquals(201, put(secondId, body).statusCode());
+      String path =
+          "/transactions/types/"
+              + URLEncoder.encode(type, StandardCharsets.UTF_8).replace("+", "%20");
+      var first = get(path + "?limit=1");
+      assertEquals(200, first.statusCode(), first.body());
+      assertEquals("[" + firstId + "]", first.body());
+      String next = nextLink(first);
+      assertTrue(
+          next.length() < 5000,
+          "Continuation must leave room for default request/response headers");
+      var last = get(next);
+      assertEquals(200, last.statusCode(), last.body());
+      assertEquals("[" + secondId + "]", last.body());
+      assertTrue(last.headers().firstValue("Link").isEmpty());
+    }
+  }
+
+  @Test
+  void buildsContinuationFromTheNormalizedTypeRatherThanRawPathPadding() throws Exception {
+    String type = "a".repeat(1024);
+    String body = json.writeValueAsString(java.util.Map.of("amount", 1, "type", type));
+    assertEquals(201, put(1, body).statusCode());
+    assertEquals(201, put(2, body).statusCode());
+    String padded = " ".repeat(1000) + type.toUpperCase(java.util.Locale.ROOT) + " ".repeat(1000);
+    String path =
+        "/transactions/types/"
+            + URLEncoder.encode(padded, StandardCharsets.UTF_8).replace("+", "%20");
+    var first = get(path + "?limit=1");
+    assertEquals(200, first.statusCode(), first.body());
+    String next = nextLink(first);
+    assertTrue(next.startsWith("/transactions/types/" + type + "?"));
+    assertEquals("[2]", get(next).body());
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
         "",
         "null",
         "[]",

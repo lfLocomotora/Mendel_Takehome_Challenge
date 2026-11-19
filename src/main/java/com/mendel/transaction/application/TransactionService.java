@@ -5,6 +5,7 @@ import com.mendel.transaction.domain.ErrorCode;
 import com.mendel.transaction.domain.Transaction;
 import com.mendel.transaction.domain.TransactionException;
 import com.mendel.transaction.storage.TransactionStore;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -13,6 +14,7 @@ import java.util.Locale;
 import java.util.Objects;
 
 public final class TransactionService {
+  private static final int MAX_TYPE_UTF8_BYTES = 1024;
   private final TransactionStore store;
   private final TransactionAccessCoordinator access;
 
@@ -80,7 +82,7 @@ public final class TransactionService {
       boolean hasMore = candidates.size() > pageSize;
       List<Long> ids = hasMore ? candidates.subList(0, pageSize) : candidates;
       String nextCursor = hasMore ? CursorCodec.encode(normalizedType, ids.getLast()) : null;
-      return new TransactionPage(ids, nextCursor);
+      return new TransactionPage(normalizedType, ids, nextCursor);
     });
   }
 
@@ -88,7 +90,25 @@ public final class TransactionService {
     if (type == null || type.isBlank()) {
       throw new TransactionException(ErrorCode.INVALID_REQUEST, "Type must be a non-blank string.");
     }
-    return type.strip().toLowerCase(Locale.ROOT);
+    String normalized = type.strip().toLowerCase(Locale.ROOT);
+    if (normalized.equals(".") || normalized.equals("..")) {
+      throw new TransactionException(
+          ErrorCode.INVALID_REQUEST, "Type must not be a dot or double-dot URL segment.");
+    }
+    if (normalized.indexOf('\0') >= 0) {
+      throw new TransactionException(
+          ErrorCode.INVALID_REQUEST, "Type must not contain the NUL character.");
+    }
+    if (!StandardCharsets.UTF_8.newEncoder().canEncode(normalized)) {
+      throw new TransactionException(
+          ErrorCode.INVALID_REQUEST, "Type must contain well-formed Unicode.");
+    }
+    if (normalized.getBytes(StandardCharsets.UTF_8).length > MAX_TYPE_UTF8_BYTES) {
+      throw new TransactionException(
+          ErrorCode.INVALID_REQUEST,
+          "Type must not exceed " + MAX_TYPE_UTF8_BYTES + " UTF-8 bytes after normalization.");
+    }
+    return normalized;
   }
 
   private void validateParent(long id, Long parentId, Transaction previous) {
