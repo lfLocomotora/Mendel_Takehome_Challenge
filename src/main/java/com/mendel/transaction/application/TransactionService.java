@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
 public final class TransactionService {
   private final TransactionStore store;
@@ -27,10 +28,10 @@ public final class TransactionService {
     String normalizedType = normalizeType(type);
     var transaction = new Transaction(id, amount, normalizedType, parentId);
     return access.write(() -> {
-      validateParent(id, parentId);
-      boolean created = store.find(id).isEmpty();
+      Transaction previous = store.find(id).orElse(null);
+      validateParent(id, parentId, previous);
       store.save(transaction);
-      return created;
+      return previous == null;
     });
   }
 
@@ -90,7 +91,10 @@ public final class TransactionService {
     return type.strip().toLowerCase(Locale.ROOT);
   }
 
-  private void validateParent(long id, Long parentId) {
+  private void validateParent(long id, Long parentId, Transaction previous) {
+    if (previous != null && Objects.equals(previous.parentId(), parentId)) {
+      return;
+    }
     Long ancestor = parentId;
     while (ancestor != null) {
       if (ancestor == id) {
@@ -99,14 +103,18 @@ public final class TransactionService {
             "Parent relationship would create a cycle for transaction " + id + ".");
       }
       long ancestorId = ancestor;
-      ancestor =
+      Transaction parent =
           store
               .find(ancestorId)
               .orElseThrow(() ->
                   new TransactionException(
                       ErrorCode.PARENT_NOT_FOUND,
-                      "Parent transaction with ID " + ancestorId + " does not exist."))
-              .parentId();
+                      "Parent transaction with ID " + ancestorId + " does not exist."));
+      // A new ID cannot already be an ancestor in the validated hierarchy.
+      if (previous == null) {
+        return;
+      }
+      ancestor = parent.parentId();
     }
   }
 }

@@ -12,6 +12,7 @@ import com.mendel.transaction.domain.TransactionException;
 import com.mendel.transaction.storage.InMemoryTransactionStore;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
@@ -165,6 +166,39 @@ class TransactionServiceTest {
       store.save(new Transaction(id, 1, "cars", id == 0 ? null : id - 1));
     }
     assertEquals(20000, service.sum(0));
+  }
+
+  @Test
+  void creatingAChainDoesNotRescanPreviouslyValidatedAncestors() {
+    var counted = new CountingStore();
+    var subject = new TransactionService(counted, new TransactionAccessCoordinator());
+    for (long id = 0; id < 1000; id++) {
+      assertTrue(subject.save(id, 1.0, "cars", id == 0 ? null : id - 1));
+    }
+    assertTrue(counted.lookups <= 2000, "Creating new IDs must not walk ancestor chains");
+    assertEquals(1000, subject.sum(0));
+  }
+
+  @Test
+  void updatingWithoutChangingTheParentDoesNotWalkTheHierarchy() {
+    var counted = new CountingStore();
+    for (long id = 0; id < 1000; id++) {
+      counted.save(new Transaction(id, 1, "cars", id == 0 ? null : id - 1));
+    }
+    var subject = new TransactionService(counted, new TransactionAccessCoordinator());
+    assertFalse(subject.save(999, 2.0, "shopping", 998L));
+    assertEquals(1, counted.lookups);
+    assertEquals(1001, subject.sum(0));
+  }
+
+  private static final class CountingStore extends InMemoryTransactionStore {
+    private int lookups;
+
+    @Override
+    public Optional<Transaction> find(long id) {
+      lookups++;
+      return super.find(id);
+    }
   }
 
   private TransactionException assertError(
